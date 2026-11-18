@@ -1,0 +1,64 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  BANK_WORKER
+  CLIENT
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  fullName  String
+  role      Role     @default(CLIENT)
+  sales     Sale[]
+  createdAt DateTime @default(now())
+}
+
+model Category {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  products    Product[]
+}
+
+model Product {
+  id          Int         @id @default(autoincrement())
+  title       String
+  costPrice   Float       // Себестоимость изготовления/закупки
+  salePrice   Float       // Розничная цена продажи в салоне
+  stock       Int         @default(0)
+  categoryId  Int
+  category    Category    @relation(fields: [categoryId], references: [id])
+  saleItems   SaleItem[]
+}
+
+model Sale {
+  id            Int         @id @default(autoincrement())
+  userId        Int
+  user          User        @relation(fields: [userId], references: [id])
+  totalAmount   Float       // Общая сумма продажи
+  totalCost     Float       // Общая себестоимость
+  totalProfit   Float       // Чистая прибыль салона
+  isCredit      Boolean     @default(false) // Продажа в кредит через банк
+  createdAt     DateTime    @default(now())
+  items         SaleItem[]
+}
+
+model SaleItem {
+  id        Int      @id @default(autoincrement())
+  saleId    Int
+  sale      Sale     @relation(fields: [saleId], references: [id])
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float
+}
